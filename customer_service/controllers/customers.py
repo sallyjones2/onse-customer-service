@@ -40,7 +40,6 @@ def create_customer():
 
     body = request.get_json()
 
-
     CREATE_PAYLOAD_SCHEMA.validate(body)
 
     customer = Customer(first_name=body['firstName'],
