@@ -12,6 +12,9 @@ customers = Blueprint('customers', __name__, url_prefix='/customers/')
 CREATE_PAYLOAD_SCHEMA = Schema({"firstName": And(str, len),
                                 "surname": And(str, len)})
 
+UPDATE_PAYLOAD_SCHEMA = Schema({"customer_id": And(int),
+                                "new_surname": And(str, len)})
+
 
 @customers.route('/<string:customer_id>', methods=['GET'])
 def get_customer(customer_id):
@@ -28,12 +31,15 @@ def get_customer(customer_id):
 
 @customers.route('/', methods=['POST'])
 def create_customer():
+
+    print("post request")
     customer_repository = current_app.customer_repository
 
     if not request.is_json:
         raise ContentTypeError()
 
     body = request.get_json()
+
 
     CREATE_PAYLOAD_SCHEMA.validate(body)
 
@@ -47,6 +53,33 @@ def create_customer():
     return jsonify(customerId=str(customer.customer_id),
                    firstName=customer.first_name,
                    surname=customer.surname), HTTPStatus.CREATED
+
+
+@customers.route('/', methods=['PUT'])
+def update_surname():
+    customer_repository = current_app.customer_repository
+
+    if not request.is_json:
+        raise ContentTypeError()
+
+    body = request.get_json()
+
+    UPDATE_PAYLOAD_SCHEMA.validate(body)
+
+    customer_id = body['customer_id']
+
+    commands.update_surname(
+        customer_id=customer_id,
+        new_surname=body['new_surname'],
+        customer_repository=customer_repository)
+
+    customer = commands.get_customer(
+        customer_id=int(customer_id),
+        customer_repository=customer_repository)
+
+    return jsonify(customerId=str(customer.customer_id),
+                   firstName=customer.first_name,
+                   surname=customer.surname), HTTPStatus.ACCEPTED
 
 
 @customers.errorhandler(CustomerNotFound)
